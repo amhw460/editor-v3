@@ -18,7 +18,10 @@ import {
   FileText,
   ChevronDown,
   Calculator,
-  Type
+  Type,
+  Code,
+  FileText as FileTextIcon,
+  Image as ImageIcon
 } from 'lucide-react';
 import { exportToPdf, exportToLatex } from '../services/exportService';
 
@@ -341,6 +344,57 @@ function Toolbar({ editor, documentTitle = 'Document' }) {
     }
   };
 
+  // Function to insert code block
+  const insertCodeBlock = () => {
+    if (editor.commands.insertCodeBlock) {
+      const javaCode = `for (int j = 0; j < numberOfValues; j++) {
+    elements.add((int) (Math.random() * maxValue + 1));
+}
+
+return elements;
+
+public static void displayValues(Collection<Integer> data) {
+    if (data.isEmpty()) {
+        System.out.println("Empty Collection");
+    } else {
+        for (Integer value : data)
+            System.out.print(value + " ");
+    }
+}`;
+      editor.commands.insertCodeBlock(javaCode, 'java');
+    } else {
+      console.error('Code block command not available');
+    }
+  };
+
+  // Function to insert LaTeX block (opens modal)
+  const insertLatexBlock = () => {
+    if (editor.commands.openLatexBlockModal) {
+      editor.commands.openLatexBlockModal();
+    } else {
+      console.error('LaTeX block command not available');
+    }
+  };
+
+  // Function to insert image
+  const insertImage = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const src = event.target.result;
+          editor.chain().focus().setImage({ src, alt: file.name }).run();
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+    input.click();
+  };
+
   const handleExportPdf = async () => {
     setIsExportDropdownOpen(false);
     try {
@@ -536,6 +590,24 @@ function Toolbar({ editor, documentTitle = 'Document' }) {
           title="Test LaTeX (Debug)"
         >
           <Calculator size={16} />
+        </ToolbarButton>
+        <ToolbarButton
+          onClick={insertCodeBlock}
+          title="Insert Code Block"
+        >
+          <Code size={16} />
+        </ToolbarButton>
+        <ToolbarButton
+          onClick={insertLatexBlock}
+          title="Insert LaTeX Block (English → LaTeX)"
+        >
+          <FileTextIcon size={16} />
+        </ToolbarButton>
+        <ToolbarButton
+          onClick={insertImage}
+          title="Insert Image"
+        >
+          <ImageIcon size={16} />
         </ToolbarButton>
       </ToolbarGroup>
 

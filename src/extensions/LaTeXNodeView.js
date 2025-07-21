@@ -52,7 +52,7 @@ const LaTeXNodeView = ({ node, updateAttributes, getPos, editor }) => {
       if (processingTimeoutRef.current) {
         clearTimeout(processingTimeoutRef.current);
       }
-
+      
       const processConversion = async () => {
         try {
           const latex = await convertToLatex(originalText);
@@ -99,7 +99,7 @@ const LaTeXNodeView = ({ node, updateAttributes, getPos, editor }) => {
       
       // Process immediately
       processingTimeoutRef.current = 'processing'; // Mark as processing
-      processConversion();
+        processConversion();
     }
   }, [originalText, localState.latexCode, localState.isProcessing, updateAttributes]);
 
@@ -202,13 +202,15 @@ const LaTeXNodeView = ({ node, updateAttributes, getPos, editor }) => {
         onMouseLeave={handleMouseLeave}
         style={{ 
           display: styleMode === 'display' ? 'block' : 'inline-block',
-          margin: styleMode === 'display' ? '1em 0' : '0 2px',
+          margin: styleMode === 'display' ? '1em auto' : '0 2px',
           padding: '2px 4px',
           borderRadius: '4px',
           backgroundColor: 'transparent',
           border: '1px solid transparent',
           cursor: 'pointer',
-          position: 'relative'
+          position: 'relative',
+          textAlign: styleMode === 'display' ? 'center' : 'inherit',
+          maxWidth: styleMode === 'display' ? '80%' : 'auto'
         }}
       >
         <span ref={renderRef} />

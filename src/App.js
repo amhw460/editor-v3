@@ -55,6 +55,8 @@ function App() {
         
         if (savedDocs) {
           const parsedDocs = JSON.parse(savedDocs);
+          console.log('App: Loaded documents from localStorage:', parsedDocs);
+          console.log('App: First document content:', parsedDocs[0]?.content);
           setDocuments(parsedDocs);
           if (parsedDocs.length > 0) {
             setCurrentDocument(parsedDocs[0]);
@@ -95,6 +97,7 @@ function App() {
   useEffect(() => {
     if (documents.length > 0) {
       const timeoutId = setTimeout(() => {
+        console.log('App: Saving documents to localStorage:', documents);
         localStorage.setItem('text-editor-documents', JSON.stringify(documents));
       }, 500);
       
@@ -145,6 +148,7 @@ function App() {
       updatedAt: new Date().toISOString()
     };
     
+    console.log('App: Updating document content:', content);
     setCurrentDocument(updatedDoc);
     setDocuments(prev => prev.map(doc => 
       doc.id === currentDocument.id ? updatedDoc : doc

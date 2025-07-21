@@ -4,7 +4,12 @@ import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
 import TextAlign from '@tiptap/extension-text-align';
+import ResizableImageExtension from '../extensions/ResizableImageExtension';
 import LaTeXExtension from '../extensions/LaTeXExtension';
+import LaTeXBlockExtension from '../extensions/LaTeXBlockExtension';
+import TableExtension from '../extensions/TableExtension';
+import CodeBlockExtension from '../extensions/CodeBlockExtension';
+import LaTeXBlockModal from './LaTeXBlockModal';
 import styled from 'styled-components';
 
 const EditorContainer = styled.div`
@@ -115,6 +120,8 @@ const EditorContainer = styled.div`
       }
     }
 
+
+
     /* LaTeX styling */
     .latex-placeholder {
       background-color: #fff3cd;
@@ -207,6 +214,42 @@ const EditorContainer = styled.div`
       }
     }
 
+    /* LaTeX Block styling - fix scrollbars and text wrapping */
+    .latex-block-rendered {
+      .katex-display {
+        overflow-x: hidden !important;
+        overflow-y: visible !important;
+        margin: 0.5em 0;
+        max-width: 100% !important;
+        
+        .katex {
+          max-width: 100% !important;
+          overflow-x: hidden !important;
+          white-space: normal !important;
+        }
+      }
+      
+      .katex {
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+        word-break: break-word;
+      }
+      
+      .katex .base {
+        max-width: 100%;
+        overflow-x: hidden;
+      }
+      
+      .katex .mord, .katex .mrel, .katex .mbin, .katex .mop, .katex .mopen, .katex .mclose {
+        word-break: break-word;
+      }
+      
+      /* Hide equation numbers */
+      .katex .eqn-num, .katex .tag {
+        display: none !important;
+      }
+    }
+
     .latex-tooltip {
       position: absolute;
       bottom: 100%;
@@ -238,6 +281,282 @@ const EditorContainer = styled.div`
     .latex-rendered:hover .latex-tooltip {
       opacity: 1;
     }
+
+    /* Table styling */
+    .table-container {
+      margin: 1em 0;
+      border: 2px solid transparent;
+      border-radius: 8px;
+      transition: border-color 0.2s;
+      
+      &.selected {
+        border-color: #4285f4;
+        box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+      }
+    }
+    
+    .editable-table {
+      width: auto;
+      max-width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      background: white;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      margin: 0 auto;
+      
+      th, td {
+        border: 1px solid #e1e5e9;
+        padding: 8px 12px;
+        text-align: left;
+        min-width: 60px;
+        max-width: 120px;
+        min-height: 36px;
+        position: relative;
+        cursor: text;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        
+        &:hover {
+          background-color: #f8f9fa;
+        }
+        
+        &.focused {
+          border-color: #2196f3;
+          box-shadow: inset 0 0 0 1px #2196f3;
+        }
+      }
+      
+      th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        color: #1a1a1a;
+        border-bottom: 2px solid #e1e5e9;
+      }
+      
+      td {
+        background-color: white;
+      }
+      
+      input {
+        width: 100%;
+        border: none;
+        background: transparent;
+        outline: none;
+        font-size: inherit;
+        font-family: inherit;
+        padding: 0;
+        color: inherit;
+        
+        &::placeholder {
+          color: #9aa0a6;
+          opacity: 0.7;
+        }
+      }
+    }
+    
+    .table-processing {
+      padding: 20px;
+      text-align: center;
+      background-color: #e3f2fd;
+      border: 1px dashed #2196f3;
+      border-radius: 4px;
+      color: #1565c0;
+      font-size: 14px;
+      margin: 1em 0;
+    }
+
+    /* Code block styling */
+    .code-block-wrapper {
+      margin: 1em 0;
+      
+      &.editing {
+        .code-block-container {
+          border-color: #4285f4;
+          box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+        }
+      }
+    }
+    
+    .code-block-container {
+      background: #f8f9fa;
+      border: 1px solid #e1e5e9;
+      border-radius: 8px;
+      overflow: hidden;
+      transition: all 0.2s;
+      cursor: pointer;
+      
+      &:hover {
+        border-color: #4285f4;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+    }
+    
+    .code-block-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 16px;
+      background: #ffffff;
+      border-bottom: 1px solid #e1e5e9;
+      font-size: 12px;
+    }
+    
+    .language-label {
+      font-weight: 600;
+      color: #4285f4;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+      font-size: 11px;
+    }
+    
+    .edit-hint {
+      color: #5f6368;
+      font-style: italic;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    
+    .code-block-container:hover .edit-hint {
+      opacity: 1;
+    }
+    
+    .edit-controls {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .save-btn, .cancel-btn {
+      padding: 4px 12px;
+      border: none;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .save-btn {
+      background: #4285f4;
+      color: white;
+      
+      &:hover {
+        background: #3367d6;
+      }
+    }
+    
+    .cancel-btn {
+      background: #f8f9fa;
+      color: #5f6368;
+      border: 1px solid #e1e5e9;
+      
+      &:hover {
+        background: #e8eaed;
+      }
+    }
+    
+    .code-block {
+      margin: 0;
+      padding: 16px;
+      background: transparent;
+      font-family: 'Monaco', 'Menlo', 'Consolas', 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.5;
+      overflow-x: auto;
+      white-space: pre;
+      
+      code {
+        background: none !important;
+        padding: 0 !important;
+        border-radius: 0 !important;
+        font-size: inherit !important;
+        font-family: inherit !important;
+      }
+    }
+    
+    .code-textarea {
+      width: 100%;
+      min-height: 120px;
+      padding: 16px;
+      border: none;
+      background: transparent;
+      font-family: 'Monaco', 'Menlo', 'Consolas', 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.5;
+      color: inherit;
+      resize: vertical;
+      outline: none;
+      
+      &::placeholder {
+        color: #9aa0a6;
+      }
+    }
+
+    /* Prism.js theme customizations - ensure they override any conflicting styles */
+    .code-block code .token.comment,
+    .code-block code .token.prolog,
+    .code-block code .token.doctype,
+    .code-block code .token.cdata {
+      color: #708090 !important;
+      font-style: italic;
+    }
+
+    .code-block code .token.punctuation {
+      color: #999 !important;
+    }
+
+    .code-block code .token.property,
+    .code-block code .token.tag,
+    .code-block code .token.constant,
+    .code-block code .token.symbol,
+    .code-block code .token.deleted {
+      color: #905 !important;
+    }
+
+    .code-block code .token.boolean,
+    .code-block code .token.number {
+      color: #009f00 !important;
+    }
+
+    .code-block code .token.selector,
+    .code-block code .token.attr-name,
+    .code-block code .token.string,
+    .code-block code .token.char,
+    .code-block code .token.builtin,
+    .code-block code .token.inserted {
+      color: #690 !important;
+    }
+
+    .code-block code .token.operator,
+    .code-block code .token.entity,
+    .code-block code .token.url,
+    .language-css .token.string,
+    .style .token.string,
+    .code-block code .token.variable {
+      color: #9a6e3a !important;
+    }
+
+    .code-block code .token.atrule,
+    .code-block code .token.attr-value,
+    .code-block code .token.function,
+    .code-block code .token.class-name {
+      color: #dd4a68 !important;
+    }
+
+    .code-block code .token.keyword {
+      color: #07a !important;
+      font-weight: bold;
+    }
+
+    .code-block code .token.regex,
+    .code-block code .token.important {
+      color: #e90 !important;
+    }
+
+
   }
 `;
 
@@ -264,11 +583,30 @@ function TextEditor({ document, onContentChange, onEditorReady }) {
       TextAlign.configure({
         types: ['heading', 'paragraph'],
       }),
+      ResizableImageExtension,
       LaTeXExtension,
+      LaTeXBlockExtension,
+      TableExtension,
+      CodeBlockExtension,
     ],
     content: document?.content || '<p></p>',
     onUpdate: ({ editor }) => {
-      handleContentChange(editor.getHTML());
+      const html = editor.getHTML();
+      const json = editor.getJSON();
+      console.log('TextEditor: Content updated, HTML:', html);
+      console.log('TextEditor: Content updated, JSON:', json);
+      
+      // Check if HTML contains table data attributes
+      if (html.includes('data-table-data')) {
+        console.log('TextEditor: HTML contains table data attributes');
+        const tableDataMatch = html.match(/data-table-data="([^"]+)"/);
+        if (tableDataMatch) {
+          console.log('TextEditor: Found table data in HTML:', tableDataMatch[1]);
+        }
+      }
+      
+      // Use HTML for persistence - table data is preserved in data attributes
+      handleContentChange(html);
     },
     onCreate: ({ editor }) => {
       onEditorReady(editor);
@@ -287,10 +625,13 @@ function TextEditor({ document, onContentChange, onEditorReady }) {
   // Update editor content when document changes
   useEffect(() => {
     if (editor && document && editor.getHTML() !== document.content) {
+      console.log('TextEditor: Loading document content:', document.content);
       isInitializing.current = true;
       editor.commands.setContent(document.content);
       setTimeout(() => {
         isInitializing.current = false;
+        console.log('TextEditor: Editor content after loading:', editor.getHTML());
+        console.log('TextEditor: Editor JSON after loading:', editor.getJSON());
       }, 100);
     }
   }, [document?.id, document?.content, editor, document]);
@@ -311,6 +652,7 @@ function TextEditor({ document, onContentChange, onEditorReady }) {
   return (
     <EditorContainer>
       <EditorContent editor={editor} />
+      <LaTeXBlockModal />
     </EditorContainer>
   );
 }
