@@ -51,7 +51,7 @@ class ConvertLatexBlockResponse(BaseModel):
     latexCode: str
     originalText: str
 
-LATEX_CONVERSION_PROMPT = """You are a mathematical LaTeX code generator. Convert natural language mathematical descriptions into proper LaTeX syntax.
+LATEX_CONVERSION_PROMPT = """You are a LaTeX specialist that converts English mathematical and logical text into well-formatted LaTeX for academic documents
 
 Examples:
 - "integral" → "\\int f(x) \\, dx"
@@ -70,14 +70,24 @@ Examples:
 - "theta" → "\\theta"
 - "pi" → "\\pi"
 
+Common examples of writing things might be:
+Integral: "int", "integral", "integ"
+Derivative: "deriv", "d/dx", "function prime"
+Fractions: "/", "over", "fraction"
+Roots: "Sqrt", "root 2", "2nd root", etc for other root exponents ("root 3", "3rd root", etc)
+Arrows: "right arrow", "left arrow", "->", "<-"
+±: "plus minus", "+-", "minus plus"
+≈: "approx", "approximately", "basically equals"
+
 Instructions:
-1. Understand the mathematical concept being described
+1. Understand the mathematical concept being described IN CONTEXT. For example, if a user says "abc / xyz", it can be inferred that the user wants a fraction with a numerator of abc and xyz. Similarly, if the user says "int x^2 dx", it can be inferred the user wants an integral due to context.
 2. Convert it to proper LaTeX syntax
 3. Use appropriate mathematical notation
 4. Return ONLY the LaTeX code without $ symbols
 5. If the input is already LaTeX, return it as-is
 6. If the input is unclear, create a reasonable mathematical expression
-
+7. NEVER evaluate the equation. For example, if translating "integral from 0 to 1 of x^2 dx", do not respond with 1/3, only output the equation the user is asking for specifically.
+8. If a user asks for a symbol, make sure to give the closest symbol to the one requested in context.
 Return only the LaTeX code, nothing else."""
 
 @app.get("/")
@@ -298,8 +308,12 @@ async def convert_latex_block(request: ConvertLatexBlockRequest):
 
 @app.post("/api/convert-table", response_model=ConvertTableResponse)
 async def convert_table(request: ConvertTableRequest):
+    fallback = [
+         {"cells": [{"content": "", "isHeader": True}, {"content": "", "isHeader": True}, {"content": "", "isHeader": True}]},
+        {"cells": [{"content": "", "isHeader": False}, {"content": "", "isHeader": False}, {"content": "", "isHeader": False}]},
+        {"cells": [{"content": "", "isHeader": False}, {"content": "", "isHeader": False}, {"content": "", "isHeader": False}]}
+    ]
     """Convert natural language table descriptions to structured table data."""
-    
     if not request.prompt.strip():
         raise HTTPException(status_code=400, detail="Prompt cannot be empty")
     
@@ -307,11 +321,7 @@ async def convert_table(request: ConvertTableRequest):
     if not GEMINI_API_KEY or GEMINI_API_KEY == "YOUR_GEMINI_API_KEY_HERE":
         logger.warning("Gemini API key not configured, using fallback table structure")
         # Return simple 3x3 table as fallback
-        fallback_table = [
-            {"cells": [{"content": "", "isHeader": True}, {"content": "", "isHeader": True}, {"content": "", "isHeader": True}]},
-            {"cells": [{"content": "", "isHeader": False}, {"content": "", "isHeader": False}, {"content": "", "isHeader": False}]},
-            {"cells": [{"content": "", "isHeader": False}, {"content": "", "isHeader": False}, {"content": "", "isHeader": False}]}
-        ]
+        fallback_table = fallback
         return ConvertTableResponse(
             tableData=fallback_table,
             originalPrompt=request.prompt
@@ -321,7 +331,7 @@ async def convert_table(request: ConvertTableRequest):
         # Use Gemini to convert natural language to table structure
         table_prompt = f"""
         Convert this table description to JSON format:
-        "{request.prompt}"
+        "{request.prompt}" """
         
         Return JSON with structure:
         {{
@@ -334,8 +344,8 @@ async def convert_table(request: ConvertTableRequest):
         - If no specific content is mentioned for cells, use empty strings ("") for content
         - Only populate cells with actual data if explicitly mentioned in the description
         - First row should have isHeader: true, other rows isHeader: false
-        - All rows must have the same number of cells
-        """
+        - All rows must have the same number of cells"""
+        
         
         model = genai.GenerativeModel(
             model_name="gemini-1.5-flash",
@@ -343,7 +353,7 @@ async def convert_table(request: ConvertTableRequest):
                 temperature=0.1,
                 max_output_tokens=500,
             ),
-            system_instruction="You are a table structure generator. Return only valid JSON."
+            system_instruction=table_prompt
         )
         
         response = model.generate_content(table_prompt)
@@ -381,11 +391,7 @@ async def convert_table(request: ConvertTableRequest):
         except (json.JSONDecodeError, ValueError) as e:
             logger.error(f"Failed to parse table JSON: {e}")
             # Fallback to simple 3x3 table
-            fallback_table = [
-                {"cells": [{"content": "", "isHeader": True}, {"content": "", "isHeader": True}, {"content": "", "isHeader": True}]},
-                {"cells": [{"content": "", "isHeader": False}, {"content": "", "isHeader": False}, {"content": "", "isHeader": False}]},
-                {"cells": [{"content": "", "isHeader": False}, {"content": "", "isHeader": False}, {"content": "", "isHeader": False}]}
-            ]
+            fallback_table = fallback
             return ConvertTableResponse(
                 tableData=fallback_table,
                 originalPrompt=request.prompt
@@ -402,11 +408,7 @@ async def convert_table(request: ConvertTableRequest):
     except Exception as e:
         logger.error(f"Error converting table: {e}")
         # Fallback to simple 3x3 table
-        fallback_table = [
-            {"cells": [{"content": "", "isHeader": True}, {"content": "", "isHeader": True}, {"content": "", "isHeader": True}]},
-            {"cells": [{"content": "", "isHeader": False}, {"content": "", "isHeader": False}, {"content": "", "isHeader": False}]},
-            {"cells": [{"content": "", "isHeader": False}, {"content": "", "isHeader": False}, {"content": "", "isHeader": False}]}
-        ]
+        fallback_table = fallback
         return ConvertTableResponse(
             tableData=fallback_table,
             originalPrompt=request.prompt
