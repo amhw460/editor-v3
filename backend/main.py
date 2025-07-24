@@ -101,10 +101,10 @@ async def health_check():
 @app.post("/api/convert-latex", response_model=ConvertLatexResponse)
 async def convert_latex(request: ConvertLatexRequest):
     """Convert natural language mathematical expressions to LaTeX."""
-    
+
     if not request.text.strip():
         raise HTTPException(status_code=400, detail="Text cannot be empty")
-    
+
     # Check if Gemini API key is configured
     if not GEMINI_API_KEY or GEMINI_API_KEY == "YOUR_GEMINI_API_KEY_HERE":
         logger.warning("Gemini API key not configured, using fallback patterns")
@@ -113,20 +113,21 @@ async def convert_latex(request: ConvertLatexRequest):
             latex=request.text,
             original_text=request.text
         )
-    
+
     try:
         # Use Gemini to convert natural language to LaTeX
         model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash",  # Stable Gemini 1.5 Flash model
+            model_name="gemini-2.0-flash",  # Stable Gemini 1.5 Flash model
             generation_config=genai.types.GenerationConfig(
                 temperature=0.1,  # Low temperature for consistent mathematical output
                 max_output_tokens=200,
             ),
             system_instruction=LATEX_CONVERSION_PROMPT
         )
-        
+
         response = model.generate_content(request.text)
-        
+        logger.info(f"Gemini API Response: {response.text}")
+
         latex_code = response.text.strip()
         
         if not latex_code or latex_code == request.text:
@@ -212,10 +213,10 @@ Return ONLY the LaTeX code, no surrounding text or markdown."""
 @app.post("/api/convert-latex-block", response_model=ConvertLatexBlockResponse)
 async def convert_latex_block(request: ConvertLatexBlockRequest):
     """Convert English text to LaTeX for large mathematical blocks."""
-    
+
     if not request.englishText.strip():
         raise HTTPException(status_code=400, detail="English text cannot be empty")
-    
+
     # Check if Gemini API key is configured
     if not GEMINI_API_KEY or GEMINI_API_KEY == "YOUR_GEMINI_API_KEY_HERE":
         logger.warning("Gemini API key not configured, using fallback LaTeX template")
@@ -224,15 +225,15 @@ async def convert_latex_block(request: ConvertLatexBlockRequest):
             latexCode=fallback_latex,
             originalText=request.englishText
         )
-    
+
     try:
         # Parse dash-separated content to preserve annotations
         input_text = request.englishText.strip()
-        
+
         # Check if the input contains dash-separated lines (math - annotation format)
         lines = input_text.split('\n')
         math_only_lines = []
-        
+
         for line in lines:
             line = line.strip()
             if ' - ' in line:
@@ -246,23 +247,23 @@ async def convert_latex_block(request: ConvertLatexBlockRequest):
                 # No annotation, use the whole line
                 if line:
                     math_only_lines.append(line)
-        
+
         # Join the mathematical parts for AI processing
         text_for_ai = '\n'.join(math_only_lines)
-        
+
         # Use Gemini to convert English to LaTeX
         model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash",
+            model_name="gemini-2.0-flash",
             generation_config=genai.types.GenerationConfig(
                 temperature=0.1,  # Low temperature for consistent output
                 max_output_tokens=800,  # More tokens for longer blocks
             ),
             system_instruction=LATEX_BLOCK_CONVERSION_PROMPT
         )
-        
+
         response = model.generate_content(text_for_ai)
-        latex_code = response.text.strip()
-        
+        logger.info(f"Gemini API Response: {response.text}")
+        latex_code = response.text.strip()        
         # Clean up the response
         if latex_code.startswith('```latex'):
             latex_code = latex_code.replace('```latex', '').replace('```', '').strip()
@@ -306,13 +307,129 @@ async def convert_latex_block(request: ConvertLatexBlockRequest):
             originalText=request.englishText
         )
 
+# @app.post("/api/convert-table", response_model=ConvertTableResponse)
+# async def convert_table(request: ConvertTableRequest):
+#     fallback = [
+#          {"cells": [{"content": "", "isHeader": True}, {"content": "", "isHeader": True}, {"content": "", "isHeader": True}]},
+#         {"cells": [{"content": "", "isHeader": False}, {"content": "", "isHeader": False}, {"content": "", "isHeader": False}]},
+#         {"cells": [{"content": "", "isHeader": False}, {"content": "", "isHeader": False}, {"content": "", "isHeader": False}]}
+#     ]
+#     """Convert natural language table descriptions to structured table data."""
+#     if not request.prompt.strip():
+#         raise HTTPException(status_code=400, detail="Prompt cannot be empty")
+    
+#     # Check if Gemini API key is configured
+#     if not GEMINI_API_KEY or GEMINI_API_KEY == "YOUR_GEMINI_API_KEY_HERE":
+#         logger.warning("Gemini API key not configured, using fallback table structure")
+#         # Return simple 3x3 table as fallback
+#         fallback_table = fallback
+#         return ConvertTableResponse(
+#             tableData=fallback_table,
+#             originalPrompt=request.prompt
+#         )
+    
+#     try:
+#         # Use Gemini to convert natural language to table structure
+#         table_prompt = f"""
+#         Convert this table description to JSON format:
+#         "{request.prompt}" 
+        
+#         Return JSON with structure:
+#         {{
+#           "tableData": [
+#             {{"cells": [{{"content": "text", "isHeader": true}}]}}
+#           ]
+#         }}
+        
+#         Important: 
+#         - If no specific content is mentioned for cells, use empty strings ("") for content
+#         - Only populate cells with actual data if explicitly mentioned in the description
+#         - First row should have isHeader: true, other rows isHeader: false
+#         - All rows must have the same number of cells"""
+        
+        
+#         model = genai.GenerativeModel(
+#             model_name="gemini-2.0-flash",
+#             generation_config=genai.types.GenerationConfig(
+#                 temperature=0.1,
+#                 max_output_tokens=1000,
+#             ),
+#             system_instruction=table_prompt
+#         )
+        
+#             response = model.generate_content(table_prompt)
+#             logger.info(f"Gemini API Response: {response.text}")
+
+#             try:
+#                 # Try to parse the JSON response
+#             response_text = response.text.strip()
+#             if response_text.startswith('```json'):
+#                 response_text = response_text[7:-3]
+#             elif response_text.startswith('```'):
+#                 response_text = response_text[3:-3]
+            
+#             import json
+#             result = json.loads(response_text)
+#             table_data = result.get("tableData", [])
+            
+#             # Validate table structure
+#             if not table_data or not isinstance(table_data, list):
+#                 raise ValueError("Invalid table data structure")
+            
+#             # Ensure all rows have the same number of cells
+#             if table_data:
+#                 first_row_length = len(table_data[0].get("cells", []))
+#                 for row in table_data:
+#                     if len(row.get("cells", [])) != first_row_length:
+#                         raise ValueError("Inconsistent row lengths")
+            
+#             logger.info(f"Successfully converted table prompt: '{request.prompt}'")
+            
+#             return ConvertTableResponse(
+#                 tableData=table_data,
+#                 originalPrompt=request.prompt
+#             )
+            
+#         except (json.JSONDecodeError, ValueError) as e:
+#             logger.error(f"Failed to parse table JSON: {e}")
+#             logger.error(f"Start of Gemini API Response: {response.text[:200]}")
+#             # Fallback to simple 3x3 table
+#             fallback_table = fallback
+#             return ConvertTableResponse(
+#                 tableData=fallback_table,
+#                 originalPrompt=request.prompt
+#             )
+        
+#     except genai.types.BlockedPromptException:
+#         logger.error("Gemini blocked the table prompt")
+#         raise HTTPException(status_code=400, detail="Content was blocked by safety filters")
+    
+#     except genai.types.StopCandidateException:
+#         logger.error("Gemini stopped table generation")
+#         raise HTTPException(status_code=400, detail="Generation was stopped")
+    
+#     except Exception as e:
+#         logger.error(f"Error converting table: {e}")
+#         # Fallback to simple 3x3 table
+#         fallback_table = fallback
+#         return ConvertTableResponse(
+#             tableData=fallback_table,
+#             originalPrompt=request.prompt
+#         )
+
+# if __name__ == "__main__":
+#     import uvicorn
+#     uvicorn.run(app, host="0.0.0.0", port=8000) 
+
+
 @app.post("/api/convert-table", response_model=ConvertTableResponse)
 async def convert_table(request: ConvertTableRequest):
     fallback = [
-         {"cells": [{"content": "", "isHeader": True}, {"content": "", "isHeader": True}, {"content": "", "isHeader": True}]},
+        {"cells": [{"content": "", "isHeader": True}, {"content": "", "isHeader": True}, {"content": "", "isHeader": True}]},
         {"cells": [{"content": "", "isHeader": False}, {"content": "", "isHeader": False}, {"content": "", "isHeader": False}]},
         {"cells": [{"content": "", "isHeader": False}, {"content": "", "isHeader": False}, {"content": "", "isHeader": False}]}
     ]
+    
     """Convert natural language table descriptions to structured table data."""
     if not request.prompt.strip():
         raise HTTPException(status_code=400, detail="Prompt cannot be empty")
@@ -320,66 +437,144 @@ async def convert_table(request: ConvertTableRequest):
     # Check if Gemini API key is configured
     if not GEMINI_API_KEY or GEMINI_API_KEY == "YOUR_GEMINI_API_KEY_HERE":
         logger.warning("Gemini API key not configured, using fallback table structure")
-        # Return simple 3x3 table as fallback
-        fallback_table = fallback
         return ConvertTableResponse(
-            tableData=fallback_table,
+            tableData=fallback,
             originalPrompt=request.prompt
         )
     
     try:
-        # Use Gemini to convert natural language to table structure
+        # Improved prompt with better structure and examples
         table_prompt = f"""
-        Convert this table description to JSON format:
-        "{request.prompt}" """
-        
-        Return JSON with structure:
-        {{
-          "tableData": [
-            {{"cells": [{{"content": "text", "isHeader": true}}]}}
-          ]
-        }}
-        
-        Important: 
-        - If no specific content is mentioned for cells, use empty strings ("") for content
-        - Only populate cells with actual data if explicitly mentioned in the description
-        - First row should have isHeader: true, other rows isHeader: false
-        - All rows must have the same number of cells"""
-        
+You are a table generator. Create a table based on this description: "{request.prompt}"
+
+Analyze the user's request carefully:
+- If they specify content (like "multiplication table", "price list with items A, B, C"), populate those cells
+- If they only specify structure (like "3x3 table", "table with 4 columns"), leave content empty
+- If they mention specific data, include that data
+
+Return ONLY valid JSON in this exact format (no markdown, no explanation):
+{{
+  "tableData": [
+    {{"cells": [{{"content": "Header 1", "isHeader": true}}, {{"content": "Header 2", "isHeader": true}}]}},
+    {{"cells": [{{"content": "Data 1", "isHeader": false}}, {{"content": "Data 2", "isHeader": false}}]}}
+  ]
+}}
+
+Examples of when to populate vs leave empty:
+- "4x4 multiplication table" → Fill with actual multiplication (×, 1, 2, 3, 4 headers and calculated results)
+- "4x4 table" → Leave content empty ("")
+- "price list for apples, oranges, bananas" → Include those items
+- "table with 3 columns" → Leave content empty ("")
+
+Rules:
+1. Only populate cells if the user specifies what should go in them
+2. For mathematical tables (multiplication, addition, etc.), calculate and show results
+3. First row should have isHeader: true for headers
+4. All data cells should have isHeader: false  
+5. All rows must have the same number of cells
+6. Maximum 8 rows and 8 columns to avoid truncation
+7. Use empty strings ("") when no specific content is requested
+8. Return ONLY the JSON, no other text
+"""
         
         model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash",
+            model_name="gemini-2.0-flash",
             generation_config=genai.types.GenerationConfig(
                 temperature=0.1,
-                max_output_tokens=500,
-            ),
-            system_instruction=table_prompt
+                max_output_tokens=4000,  # Increased token limit
+                response_mime_type="application/json"  # Force JSON response
+            )
         )
         
         response = model.generate_content(table_prompt)
+        logger.info(f"Gemini API Response: {response.text}")
+        logger.info(f"Response length: {len(response.text)}")
+        logger.info(f"Response ends with: '{response.text[-50:]}'")  # Last 50 chars
         
         try:
-            # Try to parse the JSON response
+            # More robust JSON cleaning
             response_text = response.text.strip()
+            
+            # Remove markdown code blocks if present
             if response_text.startswith('```json'):
-                response_text = response_text[7:-3]
+                response_text = response_text[7:]
+                if response_text.endswith('```'):
+                    response_text = response_text[:-3]
             elif response_text.startswith('```'):
-                response_text = response_text[3:-3]
+                response_text = response_text[3:]
+                if response_text.endswith('```'):
+                    response_text = response_text[:-3]
+            
+            response_text = response_text.strip()
+            
+            # Additional cleaning for common JSON issues
+            response_text = response_text.replace('\n', ' ')  # Remove newlines
+            response_text = response_text.replace('\t', ' ')  # Remove tabs
+            
+            # Check if response appears truncated
+            if not response_text.rstrip().endswith('}'):
+                logger.warning("Response appears truncated, attempting to fix...")
+                # Try to close incomplete JSON structure
+                open_braces = response_text.count('{')
+                close_braces = response_text.count('}')
+                open_brackets = response_text.count('[')
+                close_brackets = response_text.count(']')
+                
+                # Add missing closing characters
+                while close_brackets < open_brackets:
+                    response_text += ']'
+                    close_brackets += 1
+                while close_braces < open_braces:
+                    response_text += '}'
+                    close_braces += 1
+                
+                logger.info(f"Attempted to fix truncated JSON: {response_text[-100:]}")
+            
+            # Try to find JSON object boundaries if there's extra text
+            json_start = response_text.find('{')
+            json_end = response_text.rfind('}') + 1
+            
+            if json_start >= 0 and json_end > json_start:
+                response_text = response_text[json_start:json_end]
             
             import json
             result = json.loads(response_text)
+            logger.info(f"JSON parsed successfully!")
             table_data = result.get("tableData", [])
             
-            # Validate table structure
+            # Enhanced validation
             if not table_data or not isinstance(table_data, list):
                 raise ValueError("Invalid table data structure")
             
-            # Ensure all rows have the same number of cells
-            if table_data:
-                first_row_length = len(table_data[0].get("cells", []))
-                for row in table_data:
-                    if len(row.get("cells", [])) != first_row_length:
-                        raise ValueError("Inconsistent row lengths")
+            if not table_data:
+                raise ValueError("Empty table data")
+            
+            # Validate each row structure
+            first_row_length = len(table_data[0].get("cells", []))
+            if first_row_length == 0:
+                raise ValueError("First row has no cells")
+                
+            for i, row in enumerate(table_data):
+                if not isinstance(row, dict) or "cells" not in row:
+                    raise ValueError(f"Row {i} is missing cells")
+                
+                cells = row["cells"]
+                if not isinstance(cells, list):
+                    raise ValueError(f"Row {i} cells is not a list")
+                    
+                if len(cells) != first_row_length:
+                    raise ValueError(f"Row {i} has inconsistent length: expected {first_row_length}, got {len(cells)}")
+                
+                # Validate each cell
+                for j, cell in enumerate(cells):
+                    if not isinstance(cell, dict):
+                        raise ValueError(f"Cell [{i}][{j}] is not a dictionary")
+                    if "content" not in cell or "isHeader" not in cell:
+                        raise ValueError(f"Cell [{i}][{j}] is missing required fields")
+                    if not isinstance(cell["content"], str):
+                        cell["content"] = str(cell["content"])  # Convert to string
+                    if not isinstance(cell["isHeader"], bool):
+                        raise ValueError(f"Cell [{i}][{j}] isHeader must be boolean")
             
             logger.info(f"Successfully converted table prompt: '{request.prompt}'")
             
@@ -390,12 +585,53 @@ async def convert_table(request: ConvertTableRequest):
             
         except (json.JSONDecodeError, ValueError) as e:
             logger.error(f"Failed to parse table JSON: {e}")
-            # Fallback to simple 3x3 table
-            fallback_table = fallback
-            return ConvertTableResponse(
-                tableData=fallback_table,
-                originalPrompt=request.prompt
-            )
+            logger.error(f"Cleaned response text: {response_text[:500]}")  # Log more context
+            logger.error(f"Full Gemini response: {response.text}")
+            
+            # Try to create a simple table based on prompt analysis
+            try:
+                # Simple heuristic: look for common table indicators
+                prompt_lower = request.prompt.lower()
+                
+                # Determine rough dimensions
+                cols = 3  # default
+                rows = 3  # default
+                
+                if any(word in prompt_lower for word in ['column', 'col']):
+                    # Try to extract number of columns
+                    import re
+                    col_match = re.search(r'(\d+)[\s-]*col', prompt_lower)
+                    if col_match:
+                        cols = min(int(col_match.group(1)), 10)  # Cap at 10
+                
+                if any(word in prompt_lower for word in ['row', 'line']):
+                    # Try to extract number of rows
+                    row_match = re.search(r'(\d+)[\s-]*row', prompt_lower)
+                    if row_match:
+                        rows = min(int(row_match.group(1)), 10)  # Cap at 10
+                
+                # Create table with inferred dimensions
+                intelligent_fallback = []
+                for r in range(rows):
+                    row_cells = []
+                    for c in range(cols):
+                        row_cells.append({
+                            "content": "",
+                            "isHeader": r == 0
+                        })
+                    intelligent_fallback.append({"cells": row_cells})
+                
+                return ConvertTableResponse(
+                    tableData=intelligent_fallback,
+                    originalPrompt=request.prompt
+                )
+                
+            except Exception as fallback_error:
+                logger.error(f"Intelligent fallback failed: {fallback_error}")
+                return ConvertTableResponse(
+                    tableData=fallback,
+                    originalPrompt=request.prompt
+                )
         
     except genai.types.BlockedPromptException:
         logger.error("Gemini blocked the table prompt")
@@ -407,13 +643,11 @@ async def convert_table(request: ConvertTableRequest):
     
     except Exception as e:
         logger.error(f"Error converting table: {e}")
-        # Fallback to simple 3x3 table
-        fallback_table = fallback
         return ConvertTableResponse(
-            tableData=fallback_table,
+            tableData=fallback,
             originalPrompt=request.prompt
         )
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000) 
+    uvicorn.run(app, host="0.0.0.0", port=8000)

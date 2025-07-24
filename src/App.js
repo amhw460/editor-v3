@@ -7,13 +7,13 @@ import Toolbar from './components/Toolbar';
 const AppContainer = styled.div`
   display: flex;
   height: 100vh;
-  background-color: #f8f9fa;
+  background-color: #333333;
 `;
 
 const Sidebar = styled.div`
   width: 300px;
-  background-color: white;
-  border-right: 1px solid #e1e5e9;
+  background-color: #222222;
+  border-right: 1px solid #666666;
   display: flex;
   flex-direction: column;
 `;

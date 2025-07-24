@@ -30,8 +30,8 @@ const ToolbarContainer = styled.div`
   align-items: center;
   gap: 4px;
   padding: 12px 20px;
-  background-color: white;
-  border-bottom: 1px solid #e1e5e9;
+  background-color: #222222;
+  border-bottom: 1px solid #666666;
   flex-wrap: wrap;
 `;
 
@@ -56,11 +56,11 @@ const ToolbarButton = styled.button`
   justify-content: center;
   width: 32px;
   height: 32px;
-  background-color: ${props => props.isActive ? '#e8f0fe' : 'transparent'};
-  border: 1px solid ${props => props.isActive ? '#4285f4' : 'transparent'};
+  background-color: ${props => props.isActive ? '#e0b0ff' : 'transparent'};
+  border: 1px solid ${props => props.isActive ? '#800080' : 'transparent'};
   border-radius: 4px;
   cursor: pointer;
-  color: ${props => props.isActive ? '#4285f4' : '#5f6368'};
+  color: ${props => props.isActive ? '#800080' : '#5f6368'};
   transition: all 0.2s;
 
   &:hover {

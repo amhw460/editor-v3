@@ -54,8 +54,8 @@ const DocumentItem = styled.div`
   border-radius: 6px;
   cursor: pointer;
   transition: background-color 0.2s;
-  background-color: ${props => props.isActive ? '#e8f0fe' : 'transparent'};
-  border: ${props => props.isActive ? '1px solid #4285f4' : '1px solid transparent'};
+  background-color: ${props => props.isActive ? '#e0b0ff' : 'transparent'};
+  border: ${props => props.isActive ? '1px solid #800080' : '1px solid transparent'};
 
   &:hover {
     background-color: ${props => props.isActive ? '#e8f0fe' : '#f8f9fa'};
@@ -179,9 +179,9 @@ function DocumentManager({
     const diffTime = Math.abs(now - date);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
-    if (diffDays === 1) return 'Today';
-    if (diffDays === 2) return 'Yesterday';
-    if (diffDays <= 7) return `${diffDays - 1} days ago`;
+    if (diffDays === 1 || diffDays === 0) return 'Today';
+    else if (diffDays === 2) return 'Yesterday';
+    else return `${Math.max(diffDays - 1, 0)} days ago`;
     return date.toLocaleDateString();
   };
 

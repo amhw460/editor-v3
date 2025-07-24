@@ -17,19 +17,19 @@ const EditorContainer = styled.div`
   height: 100%;
   overflow-y: auto;
   padding: 20px;
-  background-color: #f8f9fa;
+  background-color: #333333;
   
   .ProseMirror {
     outline: none;
     max-width: 8.5in;
     margin: 0 auto;
-    background: white;
+    background: #1e1e1e;
     padding: 1in;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     min-height: 11in;
     font-size: 16px;
     line-height: 1.6;
-    color: #1a1a1a;
+    color: #d4d4d4;
     font-family: 'Computer Modern Serif', 'Latin Modern Roman', 'Times New Roman', 'Times', serif;
     
     h1 {
@@ -124,7 +124,7 @@ const EditorContainer = styled.div`
 
     /* LaTeX styling */
     .latex-placeholder {
-      background-color: #fff3cd;
+      background-color: #000000;
       border: 1px dashed #ffc107;
       border-radius: 4px;
       padding: 4px 8px;
@@ -300,7 +300,7 @@ const EditorContainer = styled.div`
       max-width: 100%;
       border-collapse: collapse;
       font-size: 14px;
-      background: white;
+      background: #000000;
       border-radius: 6px;
       overflow: hidden;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -330,14 +330,14 @@ const EditorContainer = styled.div`
       }
       
       th {
-        background-color: #f8f9fa;
+        background-color: #1e1e1e;
         font-weight: 600;
         color: #1a1a1a;
         border-bottom: 2px solid #e1e5e9;
       }
       
       td {
-        background-color: white;
+        background-color: #000000;
       }
       
       input {
@@ -360,7 +360,7 @@ const EditorContainer = styled.div`
     .table-processing {
       padding: 20px;
       text-align: center;
-      background-color: #e3f2fd;
+      background-color: #1e1e1e;
       border: 1px dashed #2196f3;
       border-radius: 4px;
       color: #1565c0;
@@ -381,7 +381,7 @@ const EditorContainer = styled.div`
     }
     
     .code-block-container {
-      background: #f8f9fa;
+      background: #000000;
       border: 1px solid #e1e5e9;
       border-radius: 8px;
       overflow: hidden;
@@ -399,14 +399,14 @@ const EditorContainer = styled.div`
       justify-content: space-between;
       align-items: center;
       padding: 8px 16px;
-      background: #ffffff;
+      background: #1e1e1e;
       border-bottom: 1px solid #e1e5e9;
       font-size: 12px;
     }
     
     .language-label {
       font-weight: 600;
-      color: #4285f4;
+      color: #800080;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
