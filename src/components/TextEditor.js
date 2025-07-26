@@ -4,12 +4,15 @@ import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
 import TextAlign from '@tiptap/extension-text-align';
+import TextStyle from '@tiptap/extension-text-style';
 import ResizableImageExtension from '../extensions/ResizableImageExtension';
 import LaTeXExtension from '../extensions/LaTeXExtension';
 import LaTeXBlockExtension from '../extensions/LaTeXBlockExtension';
 import TableExtension from '../extensions/TableExtension';
 import CodeBlockExtension from '../extensions/CodeBlockExtension';
+import FontFamilyExtension from '../extensions/FontFamilyExtension';
 import LaTeXBlockModal from './LaTeXBlockModal';
+import { useTheme } from '../contexts/ThemeContext';
 import styled from 'styled-components';
 
 const EditorContainer = styled.div`
@@ -17,26 +20,38 @@ const EditorContainer = styled.div`
   height: 100%;
   overflow-y: auto;
   padding: 20px;
-  background-color: #333333;
+  background-color: ${props => props.theme.editor};
   
   .ProseMirror {
     outline: none;
     max-width: 8.5in;
     margin: 0 auto;
-    background: #1e1e1e;
+    background: ${props => props.theme.paper};
     padding: 1in;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0 20px ${props => props.theme.shadow};
+    border: 1px solid ${props => props.theme.border};
     min-height: 11in;
     font-size: 16px;
     line-height: 1.6;
-    color: #d4d4d4;
-    font-family: 'Computer Modern Serif', 'Latin Modern Roman', 'Times New Roman', 'Times', serif;
+    color: ${props => props.theme.text};
+    font-family: 'Times New Roman', Times, serif;
+    
+    /* Force all text elements to inherit theme color */
+    * {
+      color: inherit;
+    }
+    
+    /* Font family mark styling */
+    span[style*="font-family"] {
+      /* Let the font-family style through inline styles */
+    }
     
     h1 {
       font-size: 2em;
       font-weight: 600;
       margin: 1em 0 0.5em 0;
       line-height: 1.2;
+      color: ${props => props.theme.text};
     }
 
     h2 {
@@ -44,6 +59,7 @@ const EditorContainer = styled.div`
       font-weight: 600;
       margin: 1em 0 0.5em 0;
       line-height: 1.3;
+      color: ${props => props.theme.text};
     }
 
     h3 {
@@ -51,23 +67,27 @@ const EditorContainer = styled.div`
       font-weight: 600;
       margin: 1em 0 0.5em 0;
       line-height: 1.4;
+      color: ${props => props.theme.text};
     }
 
     p {
       margin: 0.5em 0;
+      color: ${props => props.theme.text};
     }
 
     ul, ol {
       padding-left: 1.5em;
       margin: 0.5em 0;
+      color: ${props => props.theme.text};
     }
 
     li {
       margin: 0.25em 0;
+      color: ${props => props.theme.text};
     }
 
     a {
-      color: #4285f4;
+      color: ${props => props.theme.accent};
       text-decoration: none;
       
       &:hover {
@@ -77,30 +97,34 @@ const EditorContainer = styled.div`
 
     strong {
       font-weight: 600;
+      color: ${props => props.theme.text};
     }
 
     em {
       font-style: italic;
+      color: ${props => props.theme.text};
     }
 
     u {
       text-decoration: underline;
+      color: ${props => props.theme.text};
     }
 
     s {
       text-decoration: line-through;
+      color: ${props => props.theme.text};
     }
 
     blockquote {
-      border-left: 4px solid #e1e5e9;
+      border-left: 4px solid ${props => props.theme.border};
       padding-left: 1em;
       margin: 1em 0;
       font-style: italic;
-      color: #5f6368;
+      color: ${props => props.theme.textSecondary};
     }
 
     code {
-      background-color: #f8f9fa;
+      background-color: ${props => props.theme.hover};
       padding: 0.2em 0.4em;
       border-radius: 3px;
       font-family: 'Monaco', 'Courier New', monospace;
@@ -108,7 +132,7 @@ const EditorContainer = styled.div`
     }
 
     pre {
-      background-color: #f8f9fa;
+      background-color: ${props => props.theme.hover};
       padding: 1em;
       border-radius: 6px;
       overflow-x: auto;
@@ -124,27 +148,27 @@ const EditorContainer = styled.div`
 
     /* LaTeX styling */
     .latex-placeholder {
-      background-color: #000000;
-      border: 1px dashed #ffc107;
+      background-color: ${props => props.theme.editor};
+      border: 1px dashed ${props => props.theme.accent};
       border-radius: 4px;
       padding: 4px 8px;
       margin: 0 2px;
       display: inline-block;
       font-family: monospace;
       font-size: 0.9em;
-      color: #856404;
+      color: ${props => props.theme.textSecondary};
       cursor: text;
       position: relative;
 
       &:hover {
-        background-color: #fff3cd;
-        border-color: #ffb300;
+        background-color: ${props => props.theme.hover};
+        border-color: ${props => props.theme.primary};
       }
 
       &.processing {
-        background-color: #e3f2fd;
-        border-color: #2196f3;
-        color: #1565c0;
+        background-color: ${props => props.theme.active};
+        border-color: ${props => props.theme.primary};
+        color: ${props => props.theme.text};
       }
 
       &.latex-display {
@@ -168,6 +192,36 @@ const EditorContainer = styled.div`
       }
     }
 
+    /* Force KaTeX to inherit theme colors */
+    .katex {
+      color: ${props => props.theme.text} !important;
+    }
+    
+    .katex * {
+      color: ${props => props.theme.text} !important;
+    }
+    
+    .katex .mathdefault,
+    .katex .mathit,
+    .katex .mathrm,
+    .katex .mathbf,
+    .katex .mathsf,
+    .katex .mathtt {
+      color: ${props => props.theme.text} !important;
+    }
+    
+    .katex-html {
+      color: ${props => props.theme.text} !important;
+    }
+    
+    .katex-display {
+      color: ${props => props.theme.text} !important;
+    }
+    
+    .katex-display * {
+      color: ${props => props.theme.text} !important;
+    }
+
     .latex-rendered {
       display: inline-block;
       margin: 0 2px;
@@ -179,8 +233,8 @@ const EditorContainer = styled.div`
       position: relative;
 
       &:hover {
-        background-color: #f0f8ff;
-        border-color: #4285f4;
+        background-color: ${props => props.theme.hover};
+        border-color: ${props => props.theme.primary};
       }
 
       &.latex-display {
@@ -255,8 +309,8 @@ const EditorContainer = styled.div`
       bottom: 100%;
       left: 50%;
       transform: translateX(-50%);
-      background: #333;
-      color: white;
+      background: ${props => props.theme.background};
+      color: ${props => props.theme.text};
       padding: 4px 8px;
       border-radius: 4px;
       font-size: 12px;
@@ -266,6 +320,7 @@ const EditorContainer = styled.div`
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.2s;
+      border: 1px solid ${props => props.theme.border};
 
       &::after {
         content: '';
@@ -274,7 +329,7 @@ const EditorContainer = styled.div`
         left: 50%;
         transform: translateX(-50%);
         border: 4px solid transparent;
-        border-top-color: #333;
+        border-top-color: ${props => props.theme.background};
       }
     }
 
@@ -290,8 +345,8 @@ const EditorContainer = styled.div`
       transition: border-color 0.2s;
       
       &.selected {
-        border-color: #4285f4;
-        box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+        border-color: ${props => props.theme.primary};
+        box-shadow: 0 0 0 2px ${props => props.theme.activeBorder};
       }
     }
     
@@ -300,14 +355,14 @@ const EditorContainer = styled.div`
       max-width: 100%;
       border-collapse: collapse;
       font-size: 14px;
-      background: #000000;
+      background: ${props => props.theme.paper};
       border-radius: 6px;
       overflow: hidden;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 1px 3px ${props => props.theme.shadow};
       margin: 0 auto;
       
       th, td {
-        border: 1px solid #e1e5e9;
+        border: 1px solid ${props => props.theme.border};
         padding: 8px 12px;
         text-align: left;
         min-width: 60px;
@@ -320,24 +375,24 @@ const EditorContainer = styled.div`
         text-overflow: ellipsis;
         
         &:hover {
-          background-color: #f8f9fa;
+          background-color: ${props => props.theme.hover};
         }
         
         &.focused {
-          border-color: #2196f3;
-          box-shadow: inset 0 0 0 1px #2196f3;
+          border-color: ${props => props.theme.primary};
+          box-shadow: inset 0 0 0 1px ${props => props.theme.primary};
         }
       }
       
       th {
-        background-color: #1e1e1e;
+        background-color: ${props => props.theme.sidebar};
         font-weight: 600;
-        color: #1a1a1a;
-        border-bottom: 2px solid #e1e5e9;
+        color: ${props => props.theme.text};
+        border-bottom: 2px solid ${props => props.theme.border};
       }
       
       td {
-        background-color: #000000;
+        background-color: ${props => props.theme.paper};
       }
       
       input {
@@ -351,7 +406,7 @@ const EditorContainer = styled.div`
         color: inherit;
         
         &::placeholder {
-          color: #9aa0a6;
+          color: ${props => props.theme.textMuted};
           opacity: 0.7;
         }
       }
@@ -360,10 +415,10 @@ const EditorContainer = styled.div`
     .table-processing {
       padding: 20px;
       text-align: center;
-      background-color: #1e1e1e;
-      border: 1px dashed #2196f3;
+      background-color: ${props => props.theme.sidebar};
+      border: 1px dashed ${props => props.theme.primary};
       border-radius: 4px;
-      color: #1565c0;
+      color: ${props => props.theme.text};
       font-size: 14px;
       margin: 1em 0;
     }
@@ -374,23 +429,23 @@ const EditorContainer = styled.div`
       
       &.editing {
         .code-block-container {
-          border-color: #4285f4;
-          box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+          border-color: ${props => props.theme.primary};
+          box-shadow: 0 0 0 2px ${props => props.theme.activeBorder};
         }
       }
     }
     
     .code-block-container {
-      background: #000000;
-      border: 1px solid #e1e5e9;
+      background: ${props => props.theme.paper};
+      border: 1px solid ${props => props.theme.border};
       border-radius: 8px;
       overflow: hidden;
       transition: all 0.2s;
       cursor: pointer;
       
       &:hover {
-        border-color: #4285f4;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        border-color: ${props => props.theme.primary};
+        box-shadow: 0 2px 8px ${props => props.theme.shadow};
       }
     }
     
@@ -399,14 +454,14 @@ const EditorContainer = styled.div`
       justify-content: space-between;
       align-items: center;
       padding: 8px 16px;
-      background: #1e1e1e;
-      border-bottom: 1px solid #e1e5e9;
+      background: ${props => props.theme.sidebar};
+      border-bottom: 1px solid ${props => props.theme.border};
       font-size: 12px;
     }
     
     .language-label {
       font-weight: 600;
-      color: #800080;
+      color: ${props => props.theme.accent};
       text-transform: uppercase;
       letter-spacing: 0.5px;
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
@@ -414,7 +469,7 @@ const EditorContainer = styled.div`
     }
     
     .edit-hint {
-      color: #5f6368;
+      color: ${props => props.theme.textMuted};
       font-style: italic;
       opacity: 0;
       transition: opacity 0.2s;
@@ -440,21 +495,21 @@ const EditorContainer = styled.div`
     }
     
     .save-btn {
-      background: #4285f4;
-      color: white;
+      background: ${props => props.theme.primary};
+      color: ${props => props.theme.paper};
       
       &:hover {
-        background: #3367d6;
+        background: ${props => props.theme.active};
       }
     }
     
     .cancel-btn {
-      background: #f8f9fa;
-      color: #5f6368;
-      border: 1px solid #e1e5e9;
+      background: ${props => props.theme.hover};
+      color: ${props => props.theme.textMuted};
+      border: 1px solid ${props => props.theme.border};
       
       &:hover {
-        background: #e8eaed;
+        background: ${props => props.theme.active};
       }
     }
     
@@ -491,7 +546,7 @@ const EditorContainer = styled.div`
       outline: none;
       
       &::placeholder {
-        color: #9aa0a6;
+        color: ${props => props.theme.textMuted};
       }
     }
 
@@ -561,6 +616,7 @@ const EditorContainer = styled.div`
 `;
 
 function TextEditor({ document, onContentChange, onEditorReady }) {
+  const { theme } = useTheme();
   const isInitializing = useRef(true);
 
   // Memoize the content change handler
@@ -583,11 +639,13 @@ function TextEditor({ document, onContentChange, onEditorReady }) {
       TextAlign.configure({
         types: ['heading', 'paragraph'],
       }),
+      TextStyle,
       ResizableImageExtension,
       LaTeXExtension,
       LaTeXBlockExtension,
       TableExtension,
       CodeBlockExtension,
+      FontFamilyExtension,
     ],
     content: document?.content || '<p></p>',
     onUpdate: ({ editor }) => {
@@ -650,7 +708,7 @@ function TextEditor({ document, onContentChange, onEditorReady }) {
   }
 
   return (
-    <EditorContainer>
+    <EditorContainer theme={theme}>
       <EditorContent editor={editor} />
       <LaTeXBlockModal />
     </EditorContainer>

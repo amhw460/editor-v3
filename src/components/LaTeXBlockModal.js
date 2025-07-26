@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Type, FileText } from 'lucide-react';
 import styled from 'styled-components';
+import { useTheme } from '../contexts/ThemeContext';
 
 const ModalOverlay = styled.div`
   position: fixed;
@@ -17,9 +18,9 @@ const ModalOverlay = styled.div`
 `;
 
 const ModalContainer = styled.div`
-  background: white;
+  background: ${props => props.theme.background};
   border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: ${props => props.theme.shadowDark};
   max-width: 800px;
   width: 100%;
   max-height: 90vh;
@@ -30,7 +31,7 @@ const ModalContainer = styled.div`
 
 const ModalHeader = styled.div`
   padding: 24px;
-  border-bottom: 1px solid #e1e5e9;
+  border-bottom: 1px solid ${props => props.theme.border};
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -42,7 +43,7 @@ const ModalTitle = styled.div`
   gap: 12px;
   font-size: 18px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: ${props => props.theme.text};
 `;
 
 const CloseButton = styled.button`
@@ -51,12 +52,12 @@ const CloseButton = styled.button`
   padding: 8px;
   border-radius: 6px;
   cursor: pointer;
-  color: #6b7280;
+  color: ${props => props.theme.textSecondary};
   transition: all 0.2s ease;
   
   &:hover {
-    background: #f3f4f6;
-    color: #374151;
+    background: ${props => props.theme.hover};
+    color: ${props => props.theme.text};
   }
 `;
 
@@ -71,10 +72,10 @@ const ModalContent = styled.div`
 const HelpText = styled.div`
   margin-bottom: 20px;
   padding: 16px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: ${props => props.theme.paper};
+  border: 1px solid ${props => props.theme.borderLight};
   border-radius: 8px;
-  color: #475569;
+  color: ${props => props.theme.textSecondary};
   font-size: 14px;
   line-height: 1.5;
 `;
@@ -83,7 +84,9 @@ const TextArea = styled.textarea`
   flex: 1;
   min-height: 200px;
   padding: 16px;
-  border: 2px solid #e1e5e9;
+  background: ${props => props.theme.editor};
+  color: ${props => props.theme.text};
+  border: 2px solid ${props => props.theme.border};
   border-radius: 8px;
   font-size: 14px;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -96,18 +99,18 @@ const TextArea = styled.textarea`
   word-wrap: break-word;
   
   &:focus {
-    border-color: #4285f4;
-    box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.1);
+    border-color: ${props => props.theme.primary};
+    box-shadow: 0 0 0 3px ${props => props.theme.primary}33;
   }
   
   &::placeholder {
-    color: #9ca3af;
+    color: ${props => props.theme.textMuted};
   }
 `;
 
 const ModalFooter = styled.div`
   padding: 24px;
-  border-top: 1px solid #e1e5e9;
+  border-top: 1px solid ${props => props.theme.border};
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -133,31 +136,32 @@ const Button = styled.button`
 `;
 
 const PrimaryButton = styled(Button)`
-  background: #4285f4;
+  background: ${props => props.theme.primary};
   color: white;
   
   &:hover:not(:disabled) {
-    background: #3367d6;
+    background: ${props => props.theme.primaryHover};
     transform: translateY(-1px);
   }
 `;
 
 const SecondaryButton = styled(Button)`
-  background: #f3f4f6;
-  color: #374151;
+  background: ${props => props.theme.hover};
+  color: ${props => props.theme.text};
   
   &:hover:not(:disabled) {
-    background: #e5e7eb;
+    background: ${props => props.theme.active};
   }
 `;
 
 const CharacterCount = styled.div`
   font-size: 12px;
-  color: #6b7280;
+  color: ${props => props.theme.textSecondary};
   margin-left: auto;
 `;
 
 const LaTeXBlockModal = () => {
+  const { theme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const [englishText, setEnglishText] = useState('');
   const [editorRef, setEditorRef] = useState(null);
@@ -252,22 +256,22 @@ const LaTeXBlockModal = () => {
 
   return (
     <ModalOverlay onClick={(e) => e.target === e.currentTarget && handleClose()}>
-      <ModalContainer>
-        <ModalHeader>
-          <ModalTitle>
+      <ModalContainer theme={theme}>
+        <ModalHeader theme={theme}>
+          <ModalTitle theme={theme}>
             <FileText size={20} />
             {editingNode 
               ? (isProofMode ? 'Edit Proof Block' : 'Edit LaTeX Block')
               : (isProofMode ? 'Create Proof Block' : 'Create LaTeX Block')
             }
           </ModalTitle>
-          <CloseButton onClick={handleClose}>
+          <CloseButton theme={theme} onClick={handleClose}>
             <X size={18} />
           </CloseButton>
         </ModalHeader>
 
         <ModalContent>
-          <HelpText>
+          <HelpText theme={theme}>
             <strong>
               {isProofMode 
                 ? 'Enter your proof steps below and they will be converted to LaTeX.'
@@ -299,6 +303,7 @@ const LaTeXBlockModal = () => {
           </HelpText>
 
           <TextArea
+            theme={theme}
             ref={textAreaRef}
             value={englishText}
             onChange={(e) => setEnglishText(e.target.value)}
@@ -320,18 +325,19 @@ Press Ctrl+Enter to convert to LaTeX`
           />
         </ModalContent>
 
-        <ModalFooter>
+        <ModalFooter theme={theme}>
           <div>
-            <CharacterCount>
+            <CharacterCount theme={theme}>
               {englishText.length} characters
             </CharacterCount>
           </div>
           
           <div style={{ display: 'flex', gap: '12px' }}>
-            <SecondaryButton onClick={handleClose}>
+            <SecondaryButton theme={theme} onClick={handleClose}>
               Cancel
             </SecondaryButton>
             <PrimaryButton 
+              theme={theme}
               onClick={handleSubmit}
               disabled={!englishText.trim()}
             >

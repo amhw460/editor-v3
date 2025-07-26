@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import styled from 'styled-components';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import DocumentManager from './components/DocumentManager';
 import TextEditor from './components/TextEditor';
 import Toolbar from './components/Toolbar';
@@ -7,13 +8,13 @@ import Toolbar from './components/Toolbar';
 const AppContainer = styled.div`
   display: flex;
   height: 100vh;
-  background-color: #333333;
+  background-color: ${props => props.theme.background};
 `;
 
 const Sidebar = styled.div`
   width: 300px;
-  background-color: #222222;
-  border-right: 1px solid #666666;
+  background-color: ${props => props.theme.sidebar};
+  border-right: 1px solid ${props => props.theme.border};
   display: flex;
   flex-direction: column;
 `;
@@ -40,6 +41,7 @@ const EditorWrapper = styled.div`
 `;
 
 function App() {
+  const { theme } = useTheme();
   const [documents, setDocuments] = useState([]);
   const [currentDocument, setCurrentDocument] = useState(null);
   const [editor, setEditor] = useState(null);
@@ -157,19 +159,19 @@ function App() {
 
   // Memoize the loading screen to prevent unnecessary re-renders
   const loadingScreen = useMemo(() => (
-    <AppContainer>
+    <AppContainer theme={theme}>
       <div style={{ 
         display: 'flex', 
         justifyContent: 'center', 
         alignItems: 'center', 
         height: '100vh',
         fontSize: '18px',
-        color: '#5f6368'
+        color: theme.textSecondary
       }}>
         Loading...
       </div>
     </AppContainer>
-  ), []);
+  ), [theme]);
 
   // Memoize the no document screen
   const noDocumentScreen = useMemo(() => (
@@ -179,19 +181,19 @@ function App() {
       alignItems: 'center', 
       height: '100%',
       fontSize: '16px',
-      color: '#5f6368'
+      color: theme.textSecondary
     }}>
       No document selected. Create a new document to get started.
     </div>
-  ), []);
+  ), [theme]);
 
   if (isLoading) {
     return loadingScreen;
   }
 
   return (
-    <AppContainer>
-      <Sidebar>
+    <AppContainer theme={theme}>
+      <Sidebar theme={theme}>
         <DocumentManager
           documents={documents}
           currentDocument={currentDocument}
@@ -221,4 +223,12 @@ function App() {
   );
 }
 
-export default App; 
+function ThemedApp() {
+  return (
+    <ThemeProvider>
+      <App />
+    </ThemeProvider>
+  );
+}
+
+export default ThemedApp; 

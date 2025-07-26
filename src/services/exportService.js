@@ -349,7 +349,7 @@ const convertHtmlTableToLatex = (tableHtml) => {
   
   // Determine column count and alignment
   const colCount = rows[0].cells.length;
-  const alignment = 'l'.repeat(colCount);
+  const alignment = Array(colCount).fill('l').join('|');
   
   // Build LaTeX table
   let latex = '\\begin{table}[h]\n\\centering\n';
@@ -439,7 +439,7 @@ const convertCustomTableToLatex = (node) => {
   const colCount = tableData[0]?.cells?.length || 0;
   if (colCount === 0) return '';
   
-  const alignment = 'l'.repeat(colCount);
+  const alignment = Array(colCount).fill('l').join('|');
   
   // Build LaTeX table
   let latex = '\\begin{table}[h]\n\\centering\n';

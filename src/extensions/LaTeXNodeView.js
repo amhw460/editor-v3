@@ -16,6 +16,26 @@ const LaTeXNodeView = ({ node, updateAttributes, getPos, editor }) => {
 
   const { originalText, styleMode } = node.attrs;
 
+  // Process escape characters in the original text
+  const processEscapeCharacters = useCallback((text) => {
+    if (!text) return text;
+    
+    // Only process specific escape sequences that would interfere with delimiters
+    // \\ -> \ (escaped backslash)
+    // \( -> ( (escaped opening paren)
+    // \) -> ) (escaped closing paren)
+    // \/ -> / (escaped slash)
+    // Leave all other backslashes alone for LaTeX commands
+    return text
+      .replace(/\\\\/g, '\\')      // Double backslash to single backslash
+      .replace(/\\\(/g, '(')       // Escaped opening parenthesis
+      .replace(/\\\)/g, ')')       // Escaped closing parenthesis
+      .replace(/\\\//g, '/');      // Escaped forward slash
+  }, []);
+
+  // Get processed text for LaTeX conversion and display
+  const processedText = useMemo(() => processEscapeCharacters(originalText), [originalText, processEscapeCharacters]);
+
   // Memoize delimiters to prevent recalculation
   const delimiters = useMemo(() => {
     switch (styleMode) {
@@ -55,7 +75,7 @@ const LaTeXNodeView = ({ node, updateAttributes, getPos, editor }) => {
       
       const processConversion = async () => {
         try {
-          const latex = await convertToLatex(originalText);
+          const latex = await convertToLatex(processedText);
           
           // Clear the processing timeout reference
           processingTimeoutRef.current = null;
@@ -84,13 +104,13 @@ const LaTeXNodeView = ({ node, updateAttributes, getPos, editor }) => {
           
           setLocalState(prev => ({
             ...prev,
-            latexCode: originalText,
+            latexCode: processedText,
             isProcessing: false,
             isRendered: false,
             error: error.message
           }));
           updateAttributes({
-            latexCode: originalText,
+            latexCode: processedText,
             isProcessing: false,
             isRendered: false,
           });
@@ -184,7 +204,7 @@ const LaTeXNodeView = ({ node, updateAttributes, getPos, editor }) => {
           fontFamily: 'monospace',
           fontSize: '0.9em'
         }}>
-          Processing: {delimiters[0]}{originalText}{delimiters[1]}
+          Processing: {delimiters[0]}{processedText}{delimiters[1]}
         </span>
       </NodeViewWrapper>
     );

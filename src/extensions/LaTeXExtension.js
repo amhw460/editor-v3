@@ -72,9 +72,9 @@ export default Node.create({
 
   addInputRules() {
     return [
-      // Script script style rule (/ss(text)/) - More permissive regex
+      // Script script style rule (/ss(text)/) - Handle escaped parentheses
       new InputRule({
-        find: /\/ss\(([^)]*)\)\/$/,
+        find: /\/ss\(((?:[^)\\]|\\.)*)\)\/$/,
         handler: ({ state, range, match }) => {
           const { tr } = state;
           const start = range.from;
@@ -92,9 +92,9 @@ export default Node.create({
           return tr;
         },
       }),
-      // Script style rule (/s(text)/) - More permissive regex
+      // Script style rule (/s(text)/) - Handle escaped parentheses
       new InputRule({
-        find: /\/s\(([^)]*)\)\/$/,
+        find: /\/s\(((?:[^)\\]|\\.)*)\)\/$/,
         handler: ({ state, range, match }) => {
           const { tr } = state;
           const start = range.from;
@@ -112,9 +112,9 @@ export default Node.create({
           return tr;
         },
       }),
-      // Text mode rule (/m(text)/) - More permissive regex
+      // Text mode rule (/m(text)/) - Handle escaped parentheses
       new InputRule({
-        find: /\/m\(([^)]*)\)\/$/,
+        find: /\/m\(((?:[^)\\]|\\.)*)\)\/$/,
         handler: ({ state, range, match }) => {
           const { tr } = state;
           const start = range.from;
@@ -132,9 +132,9 @@ export default Node.create({
           return tr;
         },
       }),
-      // Display mode rule (/(text)/) - More permissive regex
+      // Display mode rule (/(text)/) - Handle escaped parentheses
       new InputRule({
-        find: /\/\(([^)]*)\)\/$/,
+        find: /\/\(((?:[^)\\]|\\.)*)\)\/$/,
         handler: ({ state, range, match }) => {
           const { tr } = state;
           const start = range.from;
@@ -203,10 +203,10 @@ export default Node.create({
         
         // Check if we're at the end of any LaTeX pattern
         const patterns = [
-          { regex: /\/ss\(([^)]*)\)\/\s*$/, mode: 'scriptscript' },
-          { regex: /\/s\(([^)]*)\)\/\s*$/, mode: 'script' },
-          { regex: /\/m\(([^)]*)\)\/\s*$/, mode: 'text' },
-          { regex: /\/\(([^)]*)\)\/\s*$/, mode: 'display' }
+          { regex: /\/ss\(((?:[^)\\]|\\.)*)\)\/\s*$/, mode: 'scriptscript' },
+          { regex: /\/s\(((?:[^)\\]|\\.)*)\)\/\s*$/, mode: 'script' },
+          { regex: /\/m\(((?:[^)\\]|\\.)*)\)\/\s*$/, mode: 'text' },
+          { regex: /\/\(((?:[^)\\]|\\.)*)\)\/\s*$/, mode: 'display' }
         ];
         
         for (const pattern of patterns) {

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { Plus, FileText, Trash2, Edit3, MoreVertical } from 'lucide-react';
+import { useTheme } from '../contexts/ThemeContext';
 
 const Container = styled.div`
   display: flex;
@@ -10,13 +11,13 @@ const Container = styled.div`
 
 const Header = styled.div`
   padding: 20px;
-  border-bottom: 1px solid #e1e5e9;
+  border-bottom: 1px solid ${props => props.theme.border};
 `;
 
 const Title = styled.h2`
   font-size: 18px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: ${props => props.theme.text};
   margin-bottom: 16px;
 `;
 
@@ -26,7 +27,7 @@ const CreateButton = styled.button`
   gap: 8px;
   width: 100%;
   padding: 12px 16px;
-  background-color: #4285f4;
+  background-color: ${props => props.theme.primary};
   color: white;
   border: none;
   border-radius: 6px;
@@ -36,7 +37,7 @@ const CreateButton = styled.button`
   transition: background-color 0.2s;
 
   &:hover {
-    background-color: #3367d6;
+    background-color: ${props => props.theme.primaryHover};
   }
 `;
 
@@ -54,17 +55,17 @@ const DocumentItem = styled.div`
   border-radius: 6px;
   cursor: pointer;
   transition: background-color 0.2s;
-  background-color: ${props => props.isActive ? '#e0b0ff' : 'transparent'};
-  border: ${props => props.isActive ? '1px solid #800080' : '1px solid transparent'};
+  background-color: ${props => props.isActive ? props.theme.active : 'transparent'};
+  border: ${props => props.isActive ? `1px solid ${props.theme.activeBorder}` : '1px solid transparent'};
 
   &:hover {
-    background-color: ${props => props.isActive ? '#e8f0fe' : '#f8f9fa'};
+    background-color: ${props => props.isActive ? props.theme.active : props.theme.hover};
   }
 `;
 
 const DocumentIcon = styled.div`
   margin-right: 12px;
-  color: #5f6368;
+  color: ${props => props.theme.textSecondary};
 `;
 
 const DocumentInfo = styled.div`
@@ -75,7 +76,7 @@ const DocumentInfo = styled.div`
 const DocumentTitle = styled.div`
   font-size: 14px;
   font-weight: 500;
-  color: #1a1a1a;
+  color: ${props => props.theme.text};
   margin-bottom: 4px;
   white-space: nowrap;
   overflow: hidden;
@@ -84,7 +85,7 @@ const DocumentTitle = styled.div`
 
 const DocumentDate = styled.div`
   font-size: 12px;
-  color: #5f6368;
+  color: ${props => props.theme.textSecondary};
 `;
 
 const DocumentActions = styled.div`
@@ -103,11 +104,11 @@ const ActionButton = styled.button`
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  color: #5f6368;
+  color: ${props => props.theme.textSecondary};
   transition: background-color 0.2s;
 
   &:hover {
-    background-color: #f1f3f4;
+    background-color: ${props => props.theme.hover};
   }
 `;
 
@@ -115,10 +116,10 @@ const DropdownMenu = styled.div`
   position: absolute;
   top: 100%;
   right: 0;
-  background: white;
-  border: 1px solid #e1e5e9;
+  background: ${props => props.theme.dropdown};
+  border: 1px solid ${props => props.theme.border};
   border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px ${props => props.theme.shadowDark};
   z-index: 1000;
   min-width: 120px;
 `;
@@ -133,12 +134,12 @@ const DropdownItem = styled.button`
   border: none;
   text-align: left;
   font-size: 14px;
-  color: #1a1a1a;
+  color: ${props => props.theme.text};
   cursor: pointer;
   transition: background-color 0.2s;
 
   &:hover {
-    background-color: #f8f9fa;
+    background-color: ${props => props.theme.dropdownHover};
   }
 
   &:first-child {
@@ -153,11 +154,12 @@ const DropdownItem = styled.button`
 const RenameInput = styled.input`
   width: 100%;
   padding: 4px 8px;
-  border: 1px solid #4285f4;
+  border: 1px solid ${props => props.theme.activeBorder};
   border-radius: 4px;
   font-size: 14px;
   font-weight: 500;
-  background: white;
+  background: ${props => props.theme.dropdown};
+  color: ${props => props.theme.text};
   outline: none;
 `;
 
@@ -169,6 +171,7 @@ function DocumentManager({
   onDeleteDocument, 
   onRenameDocument 
 }) {
+  const { theme } = useTheme();
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [renamingDoc, setRenamingDoc] = useState(null);
   const [renameValue, setRenameValue] = useState('');
@@ -211,30 +214,32 @@ function DocumentManager({
   };
 
   return (
-    <Container>
-      <Header>
-        <Title>Documents</Title>
-        <CreateButton onClick={onCreateDocument}>
+    <Container theme={theme}>
+      <Header theme={theme}>
+        <Title theme={theme}>Documents</Title>
+        <CreateButton theme={theme} onClick={onCreateDocument}>
           <Plus size={16} />
           New Document
         </CreateButton>
       </Header>
       
-      <DocumentList>
+      <DocumentList theme={theme}>
         {documents.map(doc => (
           <DocumentItem
             key={doc.id}
+            theme={theme}
             isActive={currentDocument?.id === doc.id}
             onClick={() => onSelectDocument(doc)}
           >
-            <DocumentIcon>
+            <DocumentIcon theme={theme}>
               <FileText size={16} />
             </DocumentIcon>
             
-            <DocumentInfo>
+            <DocumentInfo theme={theme}>
               {renamingDoc === doc.id ? (
                 <form onSubmit={handleRenameSubmit}>
                   <RenameInput
+                    theme={theme}
                     value={renameValue}
                     onChange={(e) => setRenameValue(e.target.value)}
                     onBlur={handleRenameCancel}
@@ -246,14 +251,15 @@ function DocumentManager({
                 </form>
               ) : (
                 <>
-                  <DocumentTitle>{doc.title}</DocumentTitle>
-                  <DocumentDate>{formatDate(doc.updatedAt)}</DocumentDate>
+                  <DocumentTitle theme={theme}>{doc.title}</DocumentTitle>
+                  <DocumentDate theme={theme}>{formatDate(doc.updatedAt)}</DocumentDate>
                 </>
               )}
             </DocumentInfo>
             
-            <DocumentActions>
+            <DocumentActions theme={theme}>
               <ActionButton
+                theme={theme}
                 onClick={(e) => {
                   e.stopPropagation();
                   setActiveDropdown(activeDropdown === doc.id ? null : doc.id);
@@ -263,12 +269,12 @@ function DocumentManager({
               </ActionButton>
               
               {activeDropdown === doc.id && (
-                <DropdownMenu>
-                  <DropdownItem onClick={() => handleRename(doc)}>
+                <DropdownMenu theme={theme}>
+                  <DropdownItem theme={theme} onClick={() => handleRename(doc)}>
                     <Edit3 size={14} />
                     Rename
                   </DropdownItem>
-                  <DropdownItem onClick={() => handleDelete(doc.id)}>
+                  <DropdownItem theme={theme} onClick={() => handleDelete(doc.id)}>
                     <Trash2 size={14} />
                     Delete
                   </DropdownItem>

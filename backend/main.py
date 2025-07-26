@@ -51,44 +51,52 @@ class ConvertLatexBlockResponse(BaseModel):
     latexCode: str
     originalText: str
 
-LATEX_CONVERSION_PROMPT = """You are a LaTeX specialist that converts English mathematical and logical text into well-formatted LaTeX for academic documents
+# LATEX_CONVERSION_PROMPT = """You are a LaTeX specialist that converts English mathematical and logical text into well-formatted LaTeX for academic documents
 
-Examples:
-- "integral" → "\\int f(x) \\, dx"
-- "integral of x squared" → "\\int x^2 \\, dx"
-- "definite integral from 0 to 1" → "\\int_0^1 f(x) \\, dx"
-- "fraction x over y" → "\\frac{x}{y}"
-- "square root of x" → "\\sqrt{x}"
-- "x squared" → "x^2"
-- "x to the power of n" → "x^n"
-- "sum from i equals 1 to n" → "\\sum_{i=1}^n"
-- "limit as x approaches infinity" → "\\lim_{x \\to \\infty}"
-- "derivative of f with respect to x" → "\\frac{df}{dx}"
-- "partial derivative" → "\\frac{\\partial f}{\\partial x}"
-- "alpha beta gamma" → "\\alpha \\beta \\gamma"
-- "infinity" → "\\infty"
-- "theta" → "\\theta"
-- "pi" → "\\pi"
+# Examples:
+# - "integral" → "\\int f(x) \\, dx"
+# - "integral of x squared" → "\\int x^2 \\, dx"
+# - "definite integral from 0 to 1" → "\\int_0^1 f(x) \\, dx"
+# - "fraction x over y" → "\\frac{x}{y}"
+# - "square root of x" → "\\sqrt{x}"
+# - "x squared" → "x^2"
+# - "x to the power of n" → "x^n"
+# - "sum from i equals 1 to n" → "\\sum_{i=1}^n"
+# - "limit as x approaches infinity" → "\\lim_{x \\to \\infty}"
+# - "derivative of f with respect to x" → "\\frac{df}{dx}"
+# - "partial derivative" → "\\frac{\\partial f}{\\partial x}"
+# - "alpha beta gamma" → "\\alpha \\beta \\gamma"
+# - "infinity" → "\\infty"
+# - "theta" → "\\theta"
+# - "pi" → "\\pi"
 
-Common examples of writing things might be:
-Integral: "int", "integral", "integ"
-Derivative: "deriv", "d/dx", "function prime"
-Fractions: "/", "over", "fraction"
-Roots: "Sqrt", "root 2", "2nd root", etc for other root exponents ("root 3", "3rd root", etc)
-Arrows: "right arrow", "left arrow", "->", "<-"
-±: "plus minus", "+-", "minus plus"
-≈: "approx", "approximately", "basically equals"
+# Common examples of writing things might be:
+# Integral: "int", "integral", "integ"
+# Derivative: "deriv", "d/dx", "function prime"
+# Fractions: "/", "over", "fraction"
+# Roots: "Sqrt", "root 2", "2nd root", etc for other root exponents ("root 3", "3rd root", etc)
+# Arrows: "right arrow", "left arrow", "->", "<-"
+# ±: "plus minus", "+-", "minus plus"
+# ≈: "approx", "approximately", "basically equals"
 
-Instructions:
-1. Understand the mathematical concept being described IN CONTEXT. For example, if a user says "abc / xyz", it can be inferred that the user wants a fraction with a numerator of abc and xyz. Similarly, if the user says "int x^2 dx", it can be inferred the user wants an integral due to context.
-2. Convert it to proper LaTeX syntax
-3. Use appropriate mathematical notation
-4. Return ONLY the LaTeX code without $ symbols
-5. If the input is already LaTeX, return it as-is
-6. If the input is unclear, create a reasonable mathematical expression
-7. NEVER evaluate the equation. For example, if translating "integral from 0 to 1 of x^2 dx", do not respond with 1/3, only output the equation the user is asking for specifically.
-8. If a user asks for a symbol, make sure to give the closest symbol to the one requested in context.
-Return only the LaTeX code, nothing else."""
+# Instructions:
+# 1. Understand the mathematical concept being described IN CONTEXT. For example, if a user says "abc / xyz", it can be inferred that the user wants a fraction with a numerator of abc and xyz. Similarly, if the user says "int x^2 dx", it can be inferred the user wants an integral due to context.
+# 2. Convert it to proper LaTeX syntax
+# 3. Use appropriate mathematical notation
+# 4. Return ONLY the LaTeX code without $ symbols
+# 5. If the input is already LaTeX, return it as-is
+# 6. If the input is unclear, create a reasonable mathematical expression
+# 7. NEVER evaluate the equation. For example, if translating "integral from 0 to 1 of x^2 dx", do not respond with 1/3, only output the equation the user is asking for specifically. NEVER return an evaluation, only the actual EQUATION.
+# 8. If a user asks for a symbol, make sure to give the closest symbol to the one requested in context.
+# 9. If a user types a symbol on their keyboard like ! or =, make sure that symbol is preserved when converting. 
+# Return only the LaTeX code, nothing else."""
+
+LATEX_CONVERSION_PROMPT = """
+
+You are a LaTeX specialist that converts English mathematical and logical text into well-formatted LaTeX for academic documents.
+
+When you are given an equation, CONVERT that equation into LaTeX code. Do not evaluate the expression, and make sure to preserve all parts of the equation, using your judgement to evaluate what to convert to what in terms of LaTeX code. Return ONLY the LaTeX code.
+"""
 
 @app.get("/")
 async def root():
@@ -117,7 +125,7 @@ async def convert_latex(request: ConvertLatexRequest):
     try:
         # Use Gemini to convert natural language to LaTeX
         model = genai.GenerativeModel(
-            model_name="gemini-2.0-flash",  # Stable Gemini 1.5 Flash model
+            model_name="gemini-2.5-pro",  # Stable Gemini 1.5 Flash model
             generation_config=genai.types.GenerationConfig(
                 temperature=0.1,  # Low temperature for consistent mathematical output
                 max_output_tokens=200,
@@ -253,7 +261,7 @@ async def convert_latex_block(request: ConvertLatexBlockRequest):
 
         # Use Gemini to convert English to LaTeX
         model = genai.GenerativeModel(
-            model_name="gemini-2.0-flash",
+            model_name="gemini-2.5-pro",
             generation_config=genai.types.GenerationConfig(
                 temperature=0.1,  # Low temperature for consistent output
                 max_output_tokens=800,  # More tokens for longer blocks
@@ -478,7 +486,7 @@ Rules:
 """
         
         model = genai.GenerativeModel(
-            model_name="gemini-2.0-flash",
+            model_name="gemini-2.5-pro",
             generation_config=genai.types.GenerationConfig(
                 temperature=0.1,
                 max_output_tokens=4000,  # Increased token limit
