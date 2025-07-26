@@ -2,10 +2,11 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import google.generativeai as genai
-import os
 from dotenv import load_dotenv
-import re
+import uvicorn
 import logging
+import re
+import os
 
 # Load environment variables
 load_dotenv()
@@ -51,44 +52,7 @@ class ConvertLatexBlockResponse(BaseModel):
     latexCode: str
     originalText: str
 
-LATEX_CONVERSION_PROMPT = """You are a LaTeX specialist that converts English mathematical and logical text into well-formatted LaTeX for academic documents
-
-Examples:
-- "integral" → "\\int f(x) \\, dx"
-- "integral of x squared" → "\\int x^2 \\, dx"
-- "definite integral from 0 to 1" → "\\int_0^1 f(x) \\, dx"
-- "fraction x over y" → "\\frac{x}{y}"
-- "square root of x" → "\\sqrt{x}"
-- "x squared" → "x^2"
-- "x to the power of n" → "x^n"
-- "sum from i equals 1 to n" → "\\sum_{i=1}^n"
-- "limit as x approaches infinity" → "\\lim_{x \\to \\infty}"
-- "derivative of f with respect to x" → "\\frac{df}{dx}"
-- "partial derivative" → "\\frac{\\partial f}{\\partial x}"
-- "alpha beta gamma" → "\\alpha \\beta \\gamma"
-- "infinity" → "\\infty"
-- "theta" → "\\theta"
-- "pi" → "\\pi"
-
-Common examples of writing things might be:
-Integral: "int", "integral", "integ"
-Derivative: "deriv", "d/dx", "function prime"
-Fractions: "/", "over", "fraction"
-Roots: "Sqrt", "root 2", "2nd root", etc for other root exponents ("root 3", "3rd root", etc)
-Arrows: "right arrow", "left arrow", "->", "<-"
-±: "plus minus", "+-", "minus plus"
-≈: "approx", "approximately", "basically equals"
-
-Instructions:
-1. Understand the mathematical concept being described IN CONTEXT. For example, if a user says "abc / xyz", it can be inferred that the user wants a fraction with a numerator of abc and xyz. Similarly, if the user says "int x^2 dx", it can be inferred the user wants an integral due to context.
-2. Convert it to proper LaTeX syntax
-3. Use appropriate mathematical notation
-4. Return ONLY the LaTeX code without $ symbols
-5. If the input is already LaTeX, return it as-is
-6. If the input is unclear, create a reasonable mathematical expression
-7. NEVER evaluate the equation. For example, if translating "integral from 0 to 1 of x^2 dx", do not respond with 1/3, only output the equation the user is asking for specifically.
-8. If a user asks for a symbol, make sure to give the closest symbol to the one requested in context.
-Return only the LaTeX code, nothing else."""
+LATEX_CONVERSION_PROMPT = """Convert the following math expression into LaTeX format. It would be written in a mixture of plain text and english expressions. Return ONLY the LaTeX code, without $$ or \\[]\\ delimiters."""
 
 @app.get("/")
 async def root():
@@ -117,10 +81,9 @@ async def convert_latex(request: ConvertLatexRequest):
     try:
         # Use Gemini to convert natural language to LaTeX
         model = genai.GenerativeModel(
-            model_name="gemini-2.0-flash",  # Stable Gemini 1.5 Flash model
+            model_name="gemini-2.5-flash",  # Stable Gemini 1.5 Flash model
             generation_config=genai.types.GenerationConfig(
                 temperature=0.1,  # Low temperature for consistent mathematical output
-                max_output_tokens=200,
             ),
             system_instruction=LATEX_CONVERSION_PROMPT
         )
@@ -256,7 +219,6 @@ async def convert_latex_block(request: ConvertLatexBlockRequest):
             model_name="gemini-2.0-flash",
             generation_config=genai.types.GenerationConfig(
                 temperature=0.1,  # Low temperature for consistent output
-                max_output_tokens=800,  # More tokens for longer blocks
             ),
             system_instruction=LATEX_BLOCK_CONVERSION_PROMPT
         )
@@ -306,121 +268,6 @@ async def convert_latex_block(request: ConvertLatexBlockRequest):
             latexCode=fallback_latex,
             originalText=request.englishText
         )
-
-# @app.post("/api/convert-table", response_model=ConvertTableResponse)
-# async def convert_table(request: ConvertTableRequest):
-#     fallback = [
-#          {"cells": [{"content": "", "isHeader": True}, {"content": "", "isHeader": True}, {"content": "", "isHeader": True}]},
-#         {"cells": [{"content": "", "isHeader": False}, {"content": "", "isHeader": False}, {"content": "", "isHeader": False}]},
-#         {"cells": [{"content": "", "isHeader": False}, {"content": "", "isHeader": False}, {"content": "", "isHeader": False}]}
-#     ]
-#     """Convert natural language table descriptions to structured table data."""
-#     if not request.prompt.strip():
-#         raise HTTPException(status_code=400, detail="Prompt cannot be empty")
-    
-#     # Check if Gemini API key is configured
-#     if not GEMINI_API_KEY or GEMINI_API_KEY == "YOUR_GEMINI_API_KEY_HERE":
-#         logger.warning("Gemini API key not configured, using fallback table structure")
-#         # Return simple 3x3 table as fallback
-#         fallback_table = fallback
-#         return ConvertTableResponse(
-#             tableData=fallback_table,
-#             originalPrompt=request.prompt
-#         )
-    
-#     try:
-#         # Use Gemini to convert natural language to table structure
-#         table_prompt = f"""
-#         Convert this table description to JSON format:
-#         "{request.prompt}" 
-        
-#         Return JSON with structure:
-#         {{
-#           "tableData": [
-#             {{"cells": [{{"content": "text", "isHeader": true}}]}}
-#           ]
-#         }}
-        
-#         Important: 
-#         - If no specific content is mentioned for cells, use empty strings ("") for content
-#         - Only populate cells with actual data if explicitly mentioned in the description
-#         - First row should have isHeader: true, other rows isHeader: false
-#         - All rows must have the same number of cells"""
-        
-        
-#         model = genai.GenerativeModel(
-#             model_name="gemini-2.0-flash",
-#             generation_config=genai.types.GenerationConfig(
-#                 temperature=0.1,
-#                 max_output_tokens=1000,
-#             ),
-#             system_instruction=table_prompt
-#         )
-        
-#             response = model.generate_content(table_prompt)
-#             logger.info(f"Gemini API Response: {response.text}")
-
-#             try:
-#                 # Try to parse the JSON response
-#             response_text = response.text.strip()
-#             if response_text.startswith('```json'):
-#                 response_text = response_text[7:-3]
-#             elif response_text.startswith('```'):
-#                 response_text = response_text[3:-3]
-            
-#             import json
-#             result = json.loads(response_text)
-#             table_data = result.get("tableData", [])
-            
-#             # Validate table structure
-#             if not table_data or not isinstance(table_data, list):
-#                 raise ValueError("Invalid table data structure")
-            
-#             # Ensure all rows have the same number of cells
-#             if table_data:
-#                 first_row_length = len(table_data[0].get("cells", []))
-#                 for row in table_data:
-#                     if len(row.get("cells", [])) != first_row_length:
-#                         raise ValueError("Inconsistent row lengths")
-            
-#             logger.info(f"Successfully converted table prompt: '{request.prompt}'")
-            
-#             return ConvertTableResponse(
-#                 tableData=table_data,
-#                 originalPrompt=request.prompt
-#             )
-            
-#         except (json.JSONDecodeError, ValueError) as e:
-#             logger.error(f"Failed to parse table JSON: {e}")
-#             logger.error(f"Start of Gemini API Response: {response.text[:200]}")
-#             # Fallback to simple 3x3 table
-#             fallback_table = fallback
-#             return ConvertTableResponse(
-#                 tableData=fallback_table,
-#                 originalPrompt=request.prompt
-#             )
-        
-#     except genai.types.BlockedPromptException:
-#         logger.error("Gemini blocked the table prompt")
-#         raise HTTPException(status_code=400, detail="Content was blocked by safety filters")
-    
-#     except genai.types.StopCandidateException:
-#         logger.error("Gemini stopped table generation")
-#         raise HTTPException(status_code=400, detail="Generation was stopped")
-    
-#     except Exception as e:
-#         logger.error(f"Error converting table: {e}")
-#         # Fallback to simple 3x3 table
-#         fallback_table = fallback
-#         return ConvertTableResponse(
-#             tableData=fallback_table,
-#             originalPrompt=request.prompt
-#         )
-
-# if __name__ == "__main__":
-#     import uvicorn
-#     uvicorn.run(app, host="0.0.0.0", port=8000) 
-
 
 @app.post("/api/convert-table", response_model=ConvertTableResponse)
 async def convert_table(request: ConvertTableRequest):
@@ -481,7 +328,6 @@ Rules:
             model_name="gemini-2.0-flash",
             generation_config=genai.types.GenerationConfig(
                 temperature=0.1,
-                max_output_tokens=4000,  # Increased token limit
                 response_mime_type="application/json"  # Force JSON response
             )
         )
@@ -649,5 +495,4 @@ Rules:
         )
 
 if __name__ == "__main__":
-    import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
